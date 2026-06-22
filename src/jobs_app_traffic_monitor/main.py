@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 import time
+from pathlib import Path
 
 from jobs_app_traffic_monitor.collectors import create_collector
 
@@ -38,6 +40,10 @@ def run_headless(limit: int) -> int:
 
 
 def run_gui() -> int:
+    if getattr(sys, "frozen", False):
+        qt_platforms_dir = Path(sys._MEIPASS) / "platforms"  # type: ignore[attr-defined]
+        os.environ.setdefault("QT_QPA_PLATFORM_PLUGIN_PATH", str(qt_platforms_dir))
+
     try:
         from PySide6.QtWidgets import QApplication
 

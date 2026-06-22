@@ -2,11 +2,18 @@ import unittest
 from unittest.mock import patch
 
 from jobs_app_traffic_monitor.app_resolver import AppIdentity
-from jobs_app_traffic_monitor.collectors.macos_nettop import MacOSNettopCollector, parse_nettop_row
+from jobs_app_traffic_monitor.collectors.macos_nettop import (
+    NETTOP_SAMPLE_TIMEOUT,
+    MacOSNettopCollector,
+    parse_nettop_row,
+)
 from jobs_app_traffic_monitor.models import ProcessTraffic
 
 
 class NettopParserTests(unittest.TestCase):
+    def test_sample_timeout_allows_macos_initial_snapshot(self) -> None:
+        self.assertGreater(NETTOP_SAMPLE_TIMEOUT, 5)
+
     def test_parse_process_row(self) -> None:
         line = "09:57:37.0,Google Chrome Helper.123,,,2048,1024,0,0,0,,,,"
 

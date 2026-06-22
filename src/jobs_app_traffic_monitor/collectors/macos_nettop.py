@@ -12,6 +12,9 @@ from jobs_app_traffic_monitor.collectors.base import TrafficCollector
 from jobs_app_traffic_monitor.models import AppTraffic, ProcessTraffic
 
 LOGGER = logging.getLogger(__name__)
+NETTOP_COMMAND = ["/usr/bin/nettop", "-P", "-L", "1", "-x"]
+# macOS 26 首次非交互采样约需 5 秒，超时需保留调度余量。
+NETTOP_SAMPLE_TIMEOUT = 8.0
 
 
 @dataclass(slots=True)
@@ -44,7 +47,7 @@ def parse_nettop_row(line: str) -> tuple[str, int, int, int] | None:
 
 
 class MacOSNettopCollector(TrafficCollector):
-    def __init__(self, stale_after: float = 5.0) -> None:
+    def __init__(self, stale_after: float = 12.0) -> None:
         self._stale_after = stale_after
         self._resolver = MacOSAppResolver()
         self._previous: dict[int, _Counters] = {}
@@ -107,16 +110,15 @@ class MacOSNettopCollector(TrafficCollector):
         return sorted(apps, key=lambda item: item.total_bytes, reverse=True)
 
     def _run(self) -> None:
-        command = ["nettop", "-P", "-L", "1", "-x"]
         while not self._stop_event.is_set():
             started_at = time.monotonic()
             try:
                 result = subprocess.run(
-                    command,
+                    NETTOP_COMMAND,
                     check=False,
                     capture_output=True,
                     text=True,
-                    timeout=5,
+                    timeout=NETTOP_SAMPLE_TIMEOUT,
                 )
             except FileNotFoundError:
                 LOGGER.error("系统中未找到 nettop")

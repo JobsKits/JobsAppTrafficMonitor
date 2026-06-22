@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QProcess, QTimer, Qt
+from PySide6.QtCore import QEvent, QProcess, QTimer, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QMainWindow,
     QMenu,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -33,11 +35,21 @@ class MainWindow(QMainWindow):
     def __init__(self, collector: TrafficCollector) -> None:
         super().__init__()
         self._collector = collector
+        self._dark_mode = False
         self.setWindowTitle("Jobs App Traffic Monitor")
         self.resize(1040, 680)
 
         title = QLabel("App 实时流量")
         title.setStyleSheet("font-size: 24px; font-weight: 700; margin: 8px 0;")
+        self._theme_button = QPushButton("🌙 深色")
+        self._theme_button.setToolTip("切换深色主题")
+        self._theme_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._theme_button.clicked.connect(self._toggle_theme)
+        title_layout = QHBoxLayout()
+        title_layout.addWidget(title)
+        title_layout.addStretch()
+        title_layout.addWidget(self._theme_button)
+
         subtitle = QLabel("仅统计字节数，不读取或分析数据内容")
         subtitle.setStyleSheet("color: #7a7a7a; margin-bottom: 8px;")
 
@@ -53,11 +65,17 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, len(self.HEADERS)):
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        self._empty_state = QLabel("正在采集网络流量，首次数据约 5 秒后显示……", self._table.viewport())
+        self._empty_state.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._empty_state.setStyleSheet(
+            "background: transparent; color: #6f6f6f; font-size: 16px;"
+        )
+        self._table.viewport().installEventFilter(self)
 
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(20, 18, 20, 20)
-        layout.addWidget(title)
+        layout.addLayout(title_layout)
         layout.addWidget(subtitle)
         layout.addWidget(self._table)
         self.setCentralWidget(container)
@@ -68,6 +86,15 @@ class MainWindow(QMainWindow):
         self._collector.start()
         self._timer.start()
 
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._resize_empty_state()
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
+        if watched is self._table.viewport() and event.type() == QEvent.Type.Resize:
+            self._resize_empty_state()
+        return super().eventFilter(watched, event)
+
     def closeEvent(self, event) -> None:  # noqa: N802
         self._timer.stop()
         self._collector.stop()
@@ -75,6 +102,8 @@ class MainWindow(QMainWindow):
 
     def _refresh(self) -> None:
         traffic = self._collector.snapshot()
+        self._empty_state.setVisible(not traffic)
+        self._resize_empty_state()
         self._table.setRowCount(len(traffic))
         for row, item in enumerate(traffic):
             values = (
@@ -100,6 +129,36 @@ class MainWindow(QMainWindow):
                 elif column == 3:
                     cell.setForeground(QColor("#cf5b16"))
                 self._table.setItem(row, column, cell)
+
+    def _resize_empty_state(self) -> None:
+        self._empty_state.setGeometry(self._table.viewport().rect())
+
+    def _toggle_theme(self) -> None:
+        self._dark_mode = not self._dark_mode
+        if self._dark_mode:
+            self.setStyleSheet(
+                "QMainWindow, QWidget { background: #1f1f1f; color: #f2f2f2; }"
+                "QTableWidget { background: #242424; alternate-background-color: #2c2c2c; "
+                "gridline-color: #555; }"
+                "QHeaderView::section { background: #333; color: #f2f2f2; padding: 6px; "
+                "border: 1px solid #555; }"
+                "QPushButton { background: #3a3a3a; color: #f2f2f2; border: 1px solid #666; "
+                "border-radius: 6px; padding: 6px 12px; }"
+                "QPushButton:hover { background: #4a4a4a; }"
+            )
+            self._empty_state.setStyleSheet(
+                "background: transparent; color: #b8b8b8; font-size: 16px;"
+            )
+            self._theme_button.setText("☀️ 浅色")
+            self._theme_button.setToolTip("切换浅色主题")
+            return
+
+        self.setStyleSheet("")
+        self._empty_state.setStyleSheet(
+            "background: transparent; color: #6f6f6f; font-size: 16px;"
+        )
+        self._theme_button.setText("🌙 深色")
+        self._theme_button.setToolTip("切换深色主题")
 
     def _show_context_menu(self, position) -> None:
         clicked_cell = self._table.itemAt(position)

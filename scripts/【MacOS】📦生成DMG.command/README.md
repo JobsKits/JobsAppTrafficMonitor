@@ -8,7 +8,7 @@
 
 ## 🔥 <font id=前言>前言</font>
 
-双击 `【MacOS】📦生成DMG.command`，即可生成包含完整 Python 与 PySide6 运行环境的 macOS 安装包。运行时自述固定写在脚本内部，不读取本 README。
+双击 `【MacOS】📦生成DMG.command`，即可生成包含完整 Python、PySide6 和 Qt macOS 平台插件的安装包。运行时自述固定写在脚本内部，不读取本 README。
 
 ## 一、环境体检
 
@@ -29,7 +29,7 @@
 JobsAppTrafficMonitor-版本号-macOS-架构.dmg
 ```
 
-构建完成后 Finder 会自动定位该文件。DMG 内包含 `JobsAppTrafficMonitor.app` 和 `Applications` 快捷入口。
+构建完成后 Finder 会自动定位该文件。DMG 内包含 `JobsAppTrafficMonitor.app` 和 `Applications` 快捷入口：可在 DMG 中直接双击 App 运行，也可将 App 拖到 `Applications` 完成安装。
 
 ## 三、签名边界
 
