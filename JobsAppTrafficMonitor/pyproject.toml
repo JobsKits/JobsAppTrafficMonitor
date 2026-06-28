@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "jobs-app-traffic-monitor"
 version = "0.2.0"
 description = "按 App 实时统计 macOS/Windows 上下行流量"
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.11"
 dependencies = [
     "PySide6>=6.8,<7",

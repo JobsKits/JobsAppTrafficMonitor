@@ -4,15 +4,15 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
 SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-LOG_FILE="/tmp/${SCRIPT_BASENAME}.log"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/JobsAppTrafficMonitor" && pwd)"
+LOG_FILE="${TMPDIR:-/tmp}/${SCRIPT_BASENAME}.log"
 # 打印写死在脚本内部的自述，并在安装依赖或生成构建产物前等待确认。
 show_script_intro_and_wait() {
   clear
   echo "============================== 脚本自述 =============================="
   echo "脚本名称：${SCRIPT_PATH}"
   echo "核心用途：构建自包含 JobsAppTrafficMonitor.app，并封装为 macOS DMG 安装包。"
-  echo "影响范围：缺少依赖时会安装 Homebrew、Python、PySide6、PyInstaller；项目 build/dist 会生成构建产物。"
+  echo "影响范围：缺少依赖时会安装 Homebrew、Python、PySide6、PyInstaller；内层 JobsAppTrafficMonitor/build 和 dist 会生成构建产物。"
   echo "运行策略：确认前不修改环境或文件；按 Ctrl+C 可取消。"
   echo "签名边界：仅执行本机临时签名，不包含 Developer ID 和苹果公证。"
   echo "日志位置：${LOG_FILE}"

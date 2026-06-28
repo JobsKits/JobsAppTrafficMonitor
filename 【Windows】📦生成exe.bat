@@ -5,7 +5,7 @@ chcp 65001 >nul
 
 rem 定位脚本目录与项目根目录。
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%\..\..") do set "PROJECT_ROOT=%%~fI"
+for %%I in ("%SCRIPT_DIR%JobsAppTrafficMonitor") do set "PROJECT_ROOT=%%~fI"
 set "BUILD_VENV=%PROJECT_ROOT%\build\windows-venv"
 set "DIST_DIR=%PROJECT_ROOT%\dist\windows"
 
@@ -13,8 +13,8 @@ rem 打印写死在脚本内部的自述，避免依赖外部 README。
 echo ============================== Script Intro ==============================
 echo Script: %~f0
 echo Purpose: Build a self-contained JobsAppTrafficMonitor.exe for Windows.
-echo Impact: May install Python with winget and download PySide6/PyInstaller into build\windows-venv.
-echo Output: dist\windows\JobsAppTrafficMonitor.exe
+echo Impact: May install Python with winget and download PySide6/PyInstaller into JobsAppTrafficMonitor\build\windows-venv.
+echo Output: %DIST_DIR%\JobsAppTrafficMonitor.exe
 echo Cancel: Close this window before continuing if you do not accept these changes.
 echo ========================================================================
 echo.
