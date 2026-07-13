@@ -45,6 +45,7 @@ JobsAppTrafficMonitor 是 macOS / Windows 按 App 实时统计上下行流量的
 - 外源 App 名称标红，系统 App 与系统进程使用默认颜色。
 - App 行支持右键“在 Finder 中显示”。
 - 提供 [**PySide6**](https://doc.qt.io/qtforpython-6/) 桌面界面。
+- macOS 点击黄色最小化按钮后隐藏主窗口并驻留系统顶部菜单栏；点击图标可恢复，菜单可退出并停止采集器。
 - Windows ETW 采集器接口已经预留。
 
 ## 三、打包入口 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>

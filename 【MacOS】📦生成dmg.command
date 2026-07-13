@@ -71,6 +71,7 @@ build_macos_app() {
     --windowed \
     --name "JobsAppTrafficMonitor" \
     --paths "${PROJECT_ROOT}/src" \
+    --add-data "${PROJECT_ROOT}/icon.png:." \
     --add-binary "${QT_PLATFORMS_DIR}:platforms" \
     --specpath "${PROJECT_ROOT}/build/pyinstaller-spec" \
     --workpath "${PROJECT_ROOT}/build/pyinstaller-work" \

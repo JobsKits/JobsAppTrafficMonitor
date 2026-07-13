@@ -53,6 +53,7 @@ def run_gui() -> int:
         return 2
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     window = MainWindow(create_collector())
     window.show()
     return app.exec()

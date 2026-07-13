@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from PySide6.QtCore import QEvent, QProcess, QTimer, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QAction, QColor, QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QMainWindow,
     QMenu,
     QPushButton,
+    QStyle,
+    QSystemTrayIcon,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -36,6 +42,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._collector = collector
         self._dark_mode = False
+        self._quitting = False
+        self._tray_icon: QSystemTrayIcon | None = None
         self.setWindowTitle("Jobs App Traffic Monitor")
         self.resize(1040, 680)
 
@@ -85,10 +93,75 @@ class MainWindow(QMainWindow):
         self._timer.timeout.connect(self._refresh)
         self._collector.start()
         self._timer.start()
+        self._setup_system_tray()
+
+    @staticmethod
+    def _resource_path(name: str) -> Path:
+        source_root = Path(__file__).resolve().parents[3]
+        bundle_root = Path(getattr(sys, "_MEIPASS", source_root))
+        return bundle_root / name
+
+    def _setup_system_tray(self) -> None:
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return
+        icon = QIcon(str(self._resource_path("icon.png")))
+        if icon.isNull():
+            icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        self.setWindowIcon(icon)
+        menu = QMenu(self)
+        show_action = QAction("显示 JobsAppTrafficMonitor", menu)
+        quit_action = QAction("退出 JobsAppTrafficMonitor", menu)
+        show_action.triggered.connect(self._restore_from_system_tray)
+        quit_action.triggered.connect(self._quit_application)
+        menu.addAction(show_action)
+        menu.addSeparator()
+        menu.addAction(quit_action)
+        self._tray_icon = QSystemTrayIcon(icon, self)
+        self._tray_icon.setToolTip("JobsAppTrafficMonitor")
+        self._tray_icon.setContextMenu(menu)
+        self._tray_icon.activated.connect(self._on_system_tray_activated)
+        self._tray_icon.show()
+
+    def _hide_to_system_tray(self) -> None:
+        if self._tray_icon is not None and self._tray_icon.isVisible():
+            self.hide()
+
+    def _restore_from_system_tray(self) -> None:
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _on_system_tray_activated(
+        self,
+        reason: QSystemTrayIcon.ActivationReason,
+    ) -> None:
+        if reason in {
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        }:
+            self._restore_from_system_tray()
+
+    def _stop_collector(self) -> None:
+        self._timer.stop()
+        self._collector.stop()
+
+    def _quit_application(self) -> None:
+        if self._quitting:
+            return
+        self._quitting = True
+        self._stop_collector()
+        if self._tray_icon is not None:
+            self._tray_icon.hide()
+        QApplication.quit()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._resize_empty_state()
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            QTimer.singleShot(0, self._hide_to_system_tray)
 
     def eventFilter(self, watched, event) -> bool:  # noqa: N802
         if watched is self._table.viewport() and event.type() == QEvent.Type.Resize:
@@ -96,9 +169,12 @@ class MainWindow(QMainWindow):
         return super().eventFilter(watched, event)
 
     def closeEvent(self, event) -> None:  # noqa: N802
-        self._timer.stop()
-        self._collector.stop()
-        super().closeEvent(event)
+        self._quitting = True
+        self._stop_collector()
+        if self._tray_icon is not None:
+            self._tray_icon.hide()
+        event.accept()
+        QTimer.singleShot(0, QApplication.quit)
 
     def _refresh(self) -> None:
         traffic = self._collector.snapshot()
