@@ -7,7 +7,7 @@ rem 定位脚本目录与项目根目录。
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%JobsAppTrafficMonitor") do set "PROJECT_ROOT=%%~fI"
 set "BUILD_VENV=%PROJECT_ROOT%\build\windows-venv"
-set "DIST_DIR=%PROJECT_ROOT%\dist\windows"
+set "DIST_DIR=%SCRIPT_DIR%dist"
 
 rem 打印写死在脚本内部的自述，避免依赖外部 README。
 echo ============================== Script Intro ==============================
@@ -18,6 +18,8 @@ echo Output: %DIST_DIR%\JobsAppTrafficMonitor.exe
 echo Cancel: Close this window before continuing if you do not accept these changes.
 echo ========================================================================
 echo.
+echo Output: dist\YYYY.MM.DD HH-mm-ss\ using local build time, shared by all artifacts.
+echo Build clears old dist. On success, reveal output and launch the packaged app.
 pause
 
 rem 优先使用 Python Launcher，其次使用 PATH 内的 python。
@@ -39,6 +41,7 @@ if not defined PYTHON_LAUNCHER (
     pause
     exit /b 1
   )
+  call :confirm_required_install "Missing Python; network installation required" || exit /b 1
   winget install --id Python.Python.3.13 --exact --accept-package-agreements --accept-source-agreements
   if errorlevel 1 (
     echo [ERROR] Python installation failed.
@@ -55,10 +58,24 @@ if not exist "%BUILD_VENV%\Scripts\python.exe" (
 )
 
 rem 安装或更新构建环境中的 PySide6 与 PyInstaller。
-call "%BUILD_VENV%\Scripts\python.exe" -m pip install --upgrade pip PySide6 pyinstaller
-if not %errorlevel%==0 goto :build_failed
+"%BUILD_VENV%\Scripts\python.exe" -c "import PySide6.QtWidgets, PyInstaller" >nul 2>nul
+if errorlevel 1 (
+  call :confirm_required_install "Missing build dependencies" || exit /b 1
+  "%BUILD_VENV%\Scripts\python.exe" -m pip install PySide6 pyinstaller || goto :build_failed
+  "%BUILD_VENV%\Scripts\python.exe" -c "import PySide6.QtWidgets, PyInstaller" || goto :build_failed
+)
 
 rem 使用 PyInstaller 生成单文件 Windows EXE。
+"%BUILD_VENV%\Scripts\python.exe" "%PROJECT_ROOT%\scripts\artifact_shortcuts.py" --root "%SCRIPT_DIR%." --clear || goto :build_failed
+fsutil reparsepoint query "%SCRIPT_DIR%dist" >nul 2>nul
+if not errorlevel 1 goto :build_failed
+if exist "%SCRIPT_DIR%dist" rmdir /s /q "%SCRIPT_DIR%dist"
+if exist "%SCRIPT_DIR%dist" goto :build_failed
+set "BUILD_STAMP="
+for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format 'yyyy.MM.dd HH-mm-ss'"') do set "BUILD_STAMP=%%T"
+if not defined BUILD_STAMP goto :build_failed
+set "DIST_DIR=%SCRIPT_DIR%dist\%BUILD_STAMP%"
+echo Build time (YYYY.MM.DD HH-mm-ss): %BUILD_STAMP%
 if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
 if not exist "%PROJECT_ROOT%\build\pyinstaller-windows" mkdir "%PROJECT_ROOT%\build\pyinstaller-windows"
 if not exist "%PROJECT_ROOT%\build\pyinstaller-spec-windows" mkdir "%PROJECT_ROOT%\build\pyinstaller-spec-windows"
@@ -75,12 +92,24 @@ call "%BUILD_VENV%\Scripts\python.exe" -m PyInstaller ^
   "%PROJECT_ROOT%\src\jobs_app_traffic_monitor\__main__.py"
 if not %errorlevel%==0 goto :build_failed
 
+if not exist "%DIST_DIR%\JobsAppTrafficMonitor.exe" goto :build_failed
 echo [OK] EXE generated: %DIST_DIR%\JobsAppTrafficMonitor.exe
-explorer /select,"%DIST_DIR%\JobsAppTrafficMonitor.exe"
-pause
+"%BUILD_VENV%\Scripts\python.exe" "%PROJECT_ROOT%\scripts\artifact_shortcuts.py" --root "%SCRIPT_DIR%." "%DIST_DIR%\JobsAppTrafficMonitor.exe" || goto :build_failed
+start "" explorer.exe "%DIST_DIR%"
+if not exist "%DIST_DIR%\JobsAppTrafficMonitor.exe" goto :build_failed
+start "" /D "%DIST_DIR%" "%DIST_DIR%\JobsAppTrafficMonitor.exe"
 exit /b 0
 
 :build_failed
 echo [ERROR] Build failed. Review the terminal output above.
 pause
 exit /b 1
+
+:confirm_required_install
+rem ReadLine 保留空格，并把 EOF 当成取消。
+powershell -NoProfile -Command "[Console]::Write('%~1 (Enter to install; any character to cancel): '); $answer = [Console]::ReadLine(); if ($null -eq $answer -or $answer.Length -gt 0) { exit 1 }; exit 0"
+if errorlevel 1 (
+  echo Dependency installation cancelled. Stopping current task.
+  exit /b 1
+)
+exit /b 0

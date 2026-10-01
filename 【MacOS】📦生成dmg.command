@@ -18,6 +18,8 @@ show_script_intro_and_wait() {
   echo "日志位置：${LOG_FILE}"
   echo "======================================================================="
   echo ""
+  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。'
+  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。'
   read -r "?👉 已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 初始化 Shell 选项、日志文件和共享环境函数。
@@ -64,7 +66,13 @@ read_project_version() {
 # 使用 PyInstaller 生成自包含 macOS App。
 build_macos_app() {
   info_echo "正在生成自包含 macOS App……"
-  mkdir -p "${PROJECT_ROOT}/build/pyinstaller-spec" "${PROJECT_ROOT}/build/pyinstaller-work" "${PROJECT_ROOT}/dist"
+  [[ ! -L "${SCRIPT_DIR}/dist" ]] || { error_echo "拒绝清理符号链接 dist"; return 1; }
+  "$PYTHON_BIN" "${PROJECT_ROOT}/scripts/artifact_shortcuts.py" --root "$SCRIPT_DIR" --clear
+  rm -rf -- "${SCRIPT_DIR}/dist"
+  BUILD_STAMP="$(date "+%Y.%m.%d %H-%M-%S")"
+  DIST_DIR="${SCRIPT_DIR}/dist/${BUILD_STAMP}"
+  info_echo "构建时间（年月日时分秒）：${BUILD_STAMP}"
+  mkdir -p "${PROJECT_ROOT}/build/pyinstaller-spec" "${PROJECT_ROOT}/build/pyinstaller-work" "$DIST_DIR"
   "$PYINSTALLER_BIN" \
     --noconfirm \
     --clean \
@@ -75,10 +83,10 @@ build_macos_app() {
     --add-binary "${QT_PLATFORMS_DIR}:platforms" \
     --specpath "${PROJECT_ROOT}/build/pyinstaller-spec" \
     --workpath "${PROJECT_ROOT}/build/pyinstaller-work" \
-    --distpath "${PROJECT_ROOT}/dist" \
+    --distpath "$DIST_DIR" \
     "${PROJECT_ROOT}/src/jobs_app_traffic_monitor/__main__.py" 2>&1 | tee -a "$LOG_FILE"
 
-  APP_PATH="${PROJECT_ROOT}/dist/JobsAppTrafficMonitor.app"
+  APP_PATH="${DIST_DIR}/JobsAppTrafficMonitor.app"
   if [[ ! -d "$APP_PATH" ]]; then
     error_echo "PyInstaller 未生成目标 App：${APP_PATH}"
     return 1
@@ -105,10 +113,10 @@ build_dmg() {
   local architecture=""
   version="$(read_project_version)"
   architecture="$(get_cpu_arch)"
-  DMG_PATH="${PROJECT_ROOT}/dist/JobsAppTrafficMonitor-${version}-macOS-${architecture}.dmg"
+  DMG_PATH="${DIST_DIR}/JobsAppTrafficMonitor-${version}-macOS-${architecture}.dmg"
 
   if [[ -e "$DMG_PATH" ]]; then
-    local backup_path="${DMG_PATH%.dmg}-$(date +%Y%m%d-%H%M%S).dmg"
+    local backup_path="${DMG_PATH%.dmg}-${BUILD_STAMP}.dmg"
     warn_echo "目标 DMG 已存在，旧文件移动为：${backup_path}"
     mv "$DMG_PATH" "$backup_path"
   fi
@@ -126,7 +134,9 @@ build_dmg() {
     "$DMG_PATH" 2>&1 | tee -a "$LOG_FILE"
 
   success_echo "DMG 已生成：${DMG_PATH}"
-  /usr/bin/open -R "$DMG_PATH"
+  "$PYTHON_BIN" "${PROJECT_ROOT}/scripts/artifact_shortcuts.py" --root "$SCRIPT_DIR" "$APP_PATH" "$DMG_PATH"
+  /usr/bin/open "$DIST_DIR"
+  /usr/bin/open "$APP_PATH"
 }
 # 编排内置自述、初始化、环境体检、App 构建与 DMG 封装。
 main() {

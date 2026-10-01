@@ -28,9 +28,16 @@ find_brew() {
     echo "/usr/local/bin/brew"
   fi
 }
+# 必需依赖缺失时回车安装，任意字符取消整个流程。
+confirm_required_install() {
+  local answer=""
+  IFS= read -r "?${1}（直接回车安装；输入任意字符后回车取消）：" answer || { print -u2 '没有交互输入，停止依赖安装。'; exit 1; }
+  [[ -z "$answer" ]] || { print -u2 '已取消依赖安装，停止当前流程。'; exit 1; }
+}
 # 缺少 Homebrew 时调用官方安装脚本。
 install_homebrew() {
   warn_echo "未检测到 Homebrew，将调用官方安装脚本。过程中可能要求输入本机管理员密码。"
+  confirm_required_install "缺少 Homebrew，需要联网安装"
   NONINTERACTIVE=1 /bin/bash -c "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 }
 # 确保 Homebrew 存在，并让当前终端立即加载 shellenv。
@@ -60,6 +67,7 @@ ensure_brew_formula() {
     return 0
   fi
 
+  confirm_required_install "缺少 ${formula_name}，需要联网安装"
   info_echo "正在安装缺失环境：${formula_name}"
   "$BREW_BIN" install "$formula_name" 2>&1 | tee -a "$LOG_FILE"
 }
