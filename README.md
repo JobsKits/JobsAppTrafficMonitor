@@ -52,7 +52,7 @@ JobsAppTrafficMonitor 是 macOS / Windows 按 App 实时统计上下行流量的
 
 JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时，应先通过对应平台脚本生成 `.dmg` 或 `.exe`，再从打包产物启动。
 
-### 3.1、macOS 生成 DMG
+### 3.1、macOS 生成 DMG <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 双击外层脚本：
 
@@ -64,7 +64,7 @@ JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时�
 
 运行前脚本会打印内置自述并等待回车确认；确认前不会安装依赖或生成构建产物。日志写入系统临时目录中的 `【MacOS】📦生成dmg.log`。
 
-### 3.2、Windows 生成 EXE
+### 3.2、Windows 生成 EXE <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
 
 把完整项目放到 Windows 电脑，双击外层脚本：
 
