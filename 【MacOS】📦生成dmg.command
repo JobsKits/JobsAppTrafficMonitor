@@ -1,6 +1,29 @@
 #!/bin/zsh
 # 脚本自述：双击构建 JobsAppTrafficMonitor macOS 安装包；先打印内置说明并等待确认，再检查构建环境、生成自包含 App 并封装 DMG。
 
+# 仅渲染自述：标题红色加粗，编号正文蓝色常规字重；非彩色终端输出纯文本。
+jobs_intro_style() {
+  local intro_color=0
+  if [ -t 1 ] && [ -n "${TERM:-}" ] && [ "${TERM:-}" != dumb ] &&
+     [ -z "${NO_COLOR+x}" ] && [ "${PLAIN_OUTPUT:-0}" != 1 ] &&
+     [ "${IS_SOURCETREE_RUNTIME:-0}" != 1 ]; then
+    intro_color=1
+  fi
+  /usr/bin/awk -v color="$intro_color" -v role="${1:-body}" '
+    BEGIN { esc = sprintf("%c", 27) }
+    {
+      gsub(esc "\\[[0-9;]*m", "")
+      gsub(/\\(033|e|x1[bB])\[[0-9;]*m/, "")
+      if (!color || $0 ~ /^[[:space:]]*$/) { print; next }
+      numbered = ($0 ~ /^[[:space:]➤ℹ🔹✔⚠]*([0-9]+[、.)）]|[0-9]+️⃣|[-•])/)
+      heading = ($0 ~ /^[[:space:]]*#{1,6}[[:space:]]/ || $0 ~ /[：:][[:space:]]*$/ || $0 ~ /^[[:space:]]*[=━─-]{3}/)
+      title = (!numbered && (role == "title" || heading))
+      if (role == "auto" && !seen && !numbered) title = 1
+      if ($0 !~ /^[[:space:]]*[=━─-]+[[:space:]]*$/) seen = 1
+      printf "%s%s%s\n", esc (title ? "[1;31m" : "[0;34m"), $0, esc "[0m"
+    }
+  '
+}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename -- "$0")"
 SCRIPT_BASENAME=$(basename "$0" | sed 's/\.[^.]*$//')
@@ -9,17 +32,17 @@ LOG_FILE="${TMPDIR:-/tmp}/${SCRIPT_BASENAME}.log"
 # 打印写死在脚本内部的自述，并在安装依赖或生成构建产物前等待确认。
 show_script_intro_and_wait() {
   clear
-  echo "============================== 脚本自述 =============================="
-  echo "脚本名称：${SCRIPT_PATH}"
-  echo "核心用途：构建自包含 JobsAppTrafficMonitor.app，并封装为 macOS DMG 安装包。"
-  echo "影响范围：缺少依赖时会安装 Homebrew、Python、PySide6、PyInstaller；内层 JobsAppTrafficMonitor/build 和 dist 会生成构建产物。"
-  echo "运行策略：确认前不修改环境或文件；按 Ctrl+C 可取消。"
-  echo "签名边界：仅执行本机临时签名，不包含 Developer ID 和苹果公证。"
-  echo "日志位置：${LOG_FILE}"
-  echo "======================================================================="
-  echo ""
-  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。'
-  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。'
+  echo "============================== 脚本自述 ==============================" | jobs_intro_style title
+  echo "脚本名称：${SCRIPT_PATH}" | jobs_intro_style title
+  echo "核心用途：构建自包含 JobsAppTrafficMonitor.app，并封装为 macOS DMG 安装包。" | jobs_intro_style body
+  echo "影响范围：缺少依赖时会安装 Homebrew、Python、PySide6、PyInstaller；内层 JobsAppTrafficMonitor/build 和 dist 会生成构建产物。" | jobs_intro_style body
+  echo "运行策略：确认前不修改环境或文件；按 Ctrl+C 可取消。" | jobs_intro_style body
+  echo "签名边界：仅执行本机临时签名，不包含 Developer ID 和苹果公证。" | jobs_intro_style body
+  echo "日志位置：${LOG_FILE}" | jobs_intro_style body
+  echo "=======================================================================" | jobs_intro_style title
+  echo "" | jobs_intro_style body
+  print '构建产物按本机年月日时分秒保存到 dist/YYYY.MM.DD HH-mm-ss/（例如 2020.06.04 12-23-21），同次构建共用一个时间目录。' | jobs_intro_style body
+  print '打包前清理旧 dist；成功后在第一层更新产物快捷方式、打开目录并启动本机软件。' | jobs_intro_style body
   read -r "?👉 已了解脚本用途与影响，按回车继续；按 Ctrl+C 取消：" _
 }
 # 初始化 Shell 选项、日志文件和共享环境函数。
