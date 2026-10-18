@@ -52,7 +52,16 @@ JobsAppTrafficMonitor 是 macOS / Windows 按 App 实时统计上下行流量的
 
 JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时，应先通过对应平台脚本生成 `.dmg` 或 `.exe`，再从打包产物启动。
 
-### 3.1、macOS 生成 DMG <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+### [【MacOS】📦生成dmg.command](./【MacOS】📦生成dmg.command)
+
+> **目的：** 生成按 App 流量监控工具的 macOS APP / DMG。
+
+* 阅读自述并回车，检查 Homebrew、Python 3.11+ 和 macOS 构建工具。
+* 准备项目虚拟环境与 Qt / 打包依赖。
+  * 必需依赖缺失：回车安装，任意非空输入取消；安装或复检失败时停止。
+* 清理本工具外层旧 `dist/`，构建 APP，核验 Qt 平台插件并执行本地临时签名。
+* 在构建时间目录中封装 DMG，更新快捷方式，打开产物目录并启动 APP；日志位于系统临时目录。
+
 
 双击外层脚本：
 
@@ -64,7 +73,17 @@ JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时�
 
 运行前脚本会打印内置自述并等待回车确认；确认前不会安装依赖或生成构建产物。日志写入系统临时目录中的 `【MacOS】📦生成dmg.log`。
 
-### 3.2、Windows 生成 EXE <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+### [【Windows】📦生成exe.bat](./【Windows】📦生成exe.bat)
+
+> **目的：** 在 Windows 本机生成按 App 流量监控工具的独立 EXE。
+
+* 阅读说明后继续，查找 `py -3` 或 `python`。
+  * Python 缺失：确认后通过 winget 安装；winget 不可用或安装失败时停止。
+* 创建或复用构建虚拟环境，检查 PySide6 与 PyInstaller。
+  * 依赖缺失：回车安装，任意非空输入取消；安装后复检。
+* 清理外层旧 `dist/`，在构建时间目录生成并核验单文件 EXE。
+* 更新快捷方式，打开产物目录并启动本次 EXE；失败时保留终端错误。
+
 
 把完整项目放到 Windows 电脑，双击外层脚本：
 
@@ -117,5 +136,26 @@ Windows 脚本会暂停展示内置说明，继续后可能通过 `winget` 安�
 实际使用 Python 的 Mac 入口通过脚本内部的具名函数执行环境自检，完整自检实现随该脚本携带。先阅读自述并确认，再自检 [**Homebrew**](https://brew.sh/)：已有安装执行 `brew update`，只更新自身和配方索引，不全量升级其它软件；缺少时安装并复检。安装路径精确输入 `YES` 选择系统标准目录，其它输入或回车选择用户目录；失败停止，不自动改换路线。新系统缺少 Command Line Tools 时按系统提示完成安装后重试。
 
 [**Python**](https://www.python.org) 使用 Homebrew 配方；实际版本和标准库满足工具要求时复用，不兼容时才安装 / 升级并复检。必需修复直接回车执行，任意非空输入（含空格）、EOF 或非交互缺失环境均停止。旧虚拟环境不兼容时完整改名备份后重建，保留备份。Homebrew 安装路径选择、更新、Python 版本与健康检查均封装在实际执行脚本内部，不依赖外部环境支持库、同步脚本或父仓文件。Windows 入口保持原有平台环境流程；运行已打包成品无需准备构建环境。
+
+## 八、<span id="repository-layout-and-entrypoints">本仓目录与脚本入口</span> <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a>
+
+以下为当前检出的源码与维护入口；依赖环境、Git 元数据、构建缓存和生成产物略去，独立子仓仅列目录。
+
+```text
+.
+├── .gitignore
+├── 【MacOS】📦生成dmg.command
+├── 【Windows】📦生成exe.bat
+├── JobsAppTrafficMonitor/
+│   ├── assets/
+│   ├── icon.png
+│   ├── pyproject.toml
+│   ├── scripts/
+│   ├── src/
+│   └── tests/
+└── README.md
+```
+
+* `JobsAppTrafficMonitor/src/` 保存采集器与桌面界面；`scripts/` 保存产物快捷方式辅助代码，`tests/` 保存回归用例。
 
 <a id="🔚" href="#前言" style="font-size:17px; color:green; font-weight:bold;">我是有底线的➤点我回到首页</a>
