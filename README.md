@@ -53,7 +53,7 @@ JobsAppTrafficMonitor 是 macOS / Windows 按 App 实时统计上下行流量的
 - `./【Windows】📦生成exe.bat`：Windows 打包入口，在 Windows 本机生成 `.exe`。
 - `./JobsAppTrafficMonitor/`：内层 Python 工程目录，保存源码、测试、配置、资源和构建辅助脚本。
 
-外层 `.bat` / `.command` 不再使用同名文件夹包裹，也不再分别放独立 `README.md`；入口说明统一收口在本文件。
+外层 `.bat` / `.command` 直接放在本目录；平台入口说明统一收口在本文件。
 
 ## <span id="jobs-toc-heading-3" data-jobs-toc="v2">二、当前能力 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
@@ -80,7 +80,6 @@ JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时�
 * 清理本工具外层旧 `dist/`，构建 APP，核验 Qt 平台插件并执行本地临时签名。
 * 在构建时间目录中封装 DMG，更新快捷方式，打开产物目录并启动 APP；日志位于系统临时目录。
 
-
 双击外层脚本：
 
 ```text
@@ -101,7 +100,6 @@ JobsAppTrafficMonitor 不提供外层源码运行入口；用户运行程序时�
   * 依赖缺失：回车安装，任意非空输入取消；安装后复检。
 * 清理外层旧 `dist/`，在构建时间目录生成并核验单文件 EXE。
 * 更新快捷方式，打开产物目录并启动本次 EXE；失败时保留终端错误。
-
 
 把完整项目放到 Windows 电脑，双击外层脚本：
 
@@ -147,7 +145,6 @@ Windows 脚本会暂停展示内置说明，继续后可能通过 `winget` 安�
 第一层交付目录与平台打包脚本同层保存 `dist/`，以及最新 APP / DMG 的相对符号链接（Mac）或 EXE / 分发包的 `.lnk`（Windows）。双击快捷方式即可接触成品，真实文件保留在 `dist/`；成功构建自动更新入口，清理旧产物时移除对应旧入口。尚无成品时不生成无效快捷方式。
 
 构建产物使用本机本地构建时间，格式为 `YYYY.MM.DD HH-mm-ss`（年月日时分秒），例如 `2020.06.04 12-23-21`。每次构建的 APP、DMG、EXE、ZIP 和配套文件统一保存到交付层 `./dist/YYYY.MM.DD HH-mm-ss/`，同次构建只取一次时间；第一层快捷方式指向本次时间目录，成功后打开该目录并启动其中的软件。旧产物沿用原有清理规则；历史产物缺少可靠构建时间时，不补写推测时间。
-
 
 ## <span id="jobs-toc-heading-10" data-jobs-toc="v2">七、Mac Python 环境自检 <a href="#前言" style="font-size:17px; color:green;"><b>🔼</b></a> <a href="#🔚" style="font-size:17px; color:green;"><b>🔽</b></a></span><!-- jobs-toc:heading-end -->
 
